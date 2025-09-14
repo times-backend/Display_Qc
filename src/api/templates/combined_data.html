@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Combined Data View</title>
+</head>
+<body>
+    <h1>Combined Data for Expresso: {{ expresso }}</h1>
+
+    <h2>Line Item Data</h2>
+    <pre>{{ line_item_data | tojson(indent=2) }}</pre>
+
+    <h2>Expresso Data</h2>
+    <pre>{{ expresso_data | tojson(indent=2) }}</pre>
+
+    <h2>DSD Result</h2>
+    <p>{{ "DSD Downloaded" if dsd_result else "DSD Not Found" }}</p>
+</body>
+</html>

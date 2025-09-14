@@ -1,0 +1,10 @@
+/venv
+.env
+*.db
+test.txt
+tst.txt
+/logs
+__pycache__
+main.py
+/bq_table_schema
+/migrations

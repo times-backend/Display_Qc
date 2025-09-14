@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>DSD vs Expresso Comparison</title>
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            background-color: #f1f3f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .wrapper {
+            min-height: 100vh;
+            padding: 30px 0;
+        }
+
+        .content-box {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        h2,
+        h4 {
+            font-weight: 600;
+        }
+
+        .form-label {
+            font-weight: 500;
+        }
+
+        .badge {
+            font-size: 0.85rem;
+            padding: 0.4em 0.6em;
+        }
+
+        .table th,
+        .table td {
+            vertical-align: top;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #f0f8ff;
+        }
+
+        td ul {
+            padding-left: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        td ul li {
+            list-style-type: disc;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .content-box {
+                padding: 30px 20px;
+            }
+
+            .table th,
+            .table td {
+                font-size: 0.85rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 col-lg-10">
+                    <div class="content-box">
+                        <h2 class="text-center mb-4">DSD vs Expresso Validator</h2>
+
+                        <!-- Input Form -->
+                        <form method="POST" action="/compare">
+                            <div class="mb-4">
+                                <label for="lineitem_name" class="form-label">Enter Line Item Name:</label>
+                                <input type="text" class="form-control" id="lineitem_name" name="lineitem_name"
+                                    placeholder="e.g. 28101110DOMEBUREAUTILROSINATFCPMTOIMRECWBMWBDAVPMRECPKG214620"
+                                    required />
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Compare</button>
+                        </form>
+
+                        <!-- DSD vs Expresso Result Table -->
+                        {% if result %}
+                        <div class="result-box mt-5">
+                            <h4 class="mb-4 text-center">DSD vs Expresso Comparison</h4>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Attribute</th>
+                                            {% for field in result %}
+                                            <th>{{ field.replace('_', ' ').title() }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Status</strong></td>
+                                            {% for field, data in result.items() %}
+                                            <td>
+                                                {% if data.match %}
+                                                <span class="badge bg-success">Match</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">Mismatch</span>
+                                                {% endif %}
+                                            </td>
+                                            {% endfor %}
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Expresso</strong></td>
+                                            {% for field, data in result.items() %}
+                                            <td>{{ data.expresso }}</td>
+                                            {% endfor %}
+                                        </tr>
+                                        <tr>
+                                            <td><strong>DSD</strong></td>
+                                            {% for field, data in result.items() %}
+                                            <td>{{ data.dsd }}</td>
+                                            {% endfor %}
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% elif error %}
+                        <div class="alert alert-danger mt-4" role="alert">
+                            {{ error }}
+                        </div>
+                        {% endif %}
+
+                        <!-- Final Data vs GAM Comparison -->
+                        {% if gam_comparison %}
+                        <div class="result-box mt-5">
+                            <h4 class="mb-4 text-center">Final Data vs GAM Line Items</h4>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="min-width: 200px;">Field</th>
+                                            {% for comparison_key in gam_comparison %}
+                                            <th>{{ comparison_key.replace('comparison_', '') }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {# Build list of all fields inside “fields” plus optional GAM-only fields #}
+                                        {% set all_fields = [] %}
+                                        {% for comp in gam_comparison.values() %}
+                                            {% for field_name in comp.fields.keys() %}
+                                                {% if field_name not in all_fields %}
+                                                    {% set _ = all_fields.append(field_name) %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                        {# Optional GAM-only fields #}
+                                        {% set optional_fields = ['status', 'priority', 'targetedAdUnits', 'targetedPlacementIds', 'excluded_geo', 'excludedAdUnits'] %}
+                                        {% for opt in optional_fields %}
+                                            {% if opt not in all_fields %}
+                                                {% set _ = all_fields.append(opt) %}
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% for field in all_fields %}
+                                        <tr class="{% if loop.index0 % 2 == 0 %}table-light{% endif %}">
+                                            <td class="fw-semibold">{{ field.replace('_', ' ').title() }}</td>
+                                            {% for comp in gam_comparison.values() %}
+                                            <td>
+                                                {# Try fields first #}
+                                                {% set field_data = comp.fields.get(field) %}
+                                                {% set gam_only_value = none %}
+                                                {% if not field_data %}
+                                                    {% if comp.extra_info is defined and comp.extra_info.get(field) is defined %}
+                                                        {% set gam_only_value = comp.extra_info.get(field) %}
+                                                    {% elif comp.matched_gam is defined and comp.matched_gam.get(field) is defined %}
+                                                        {% set gam_only_value = comp.matched_gam.get(field) %}
+                                                    {% endif %}
+                                                {% endif %}
+
+                                                {% if field_data %}
+                                                    {# Show match status #}
+                                                    {% if field_data.match is defined %}
+                                                        {% if field_data.match %}
+                                                            <span class="badge bg-success">Match</span>
+                                                        {% else %}
+                                                            <span class="badge bg-danger">Mismatch</span>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">GAM Only</span>
+                                                    {% endif %}
+
+                                                    <div class="mt-2 small">
+                                                        {# Final data if present #}
+                                                        {% if field_data.final_data is defined %}
+                                                        <div>
+                                                            <span class="text-muted">Final:</span>
+                                                            <strong>
+                                                                {% if field_data.final_data is iterable and field_data.final_data is not string %}
+                                                                <ul class="mb-0 ps-3">
+                                                                    {% for item in field_data.final_data %}
+                                                                    <li>{{ item }}</li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                                {% else %}
+                                                                {{ field_data.final_data }}
+                                                                {% endif %}
+                                                            </strong>
+                                                        </div>
+                                                        {% endif %}
+
+                                                        {# GAM data from fields #}
+                                                        {% if field_data.gam_data is defined %}
+                                                        <div>
+                                                            <span class="text-muted">GAM:</span>
+                                                            <strong>
+                                                                {% if field_data.gam_data is iterable and field_data.gam_data is not string %}
+                                                                <ul class="mb-0 ps-3">
+                                                                    {% for item in field_data.gam_data %}
+                                                                    <li>{{ item }}</li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                                {% else %}
+                                                                {{ field_data.gam_data }}
+                                                                {% endif %}
+                                                            </strong>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+
+                                                {% elif gam_only_value is not none %}
+                                                    {# Only GAM or extra_info/matched_gam #}
+                                                    <span class="badge bg-secondary">GAM Only</span>
+                                                    <div class="mt-2 small">
+                                                        <div>
+                                                            <span class="text-muted">GAM:</span>
+                                                            <strong>
+                                                                {% if gam_only_value is iterable and gam_only_value is not string %}
+                                                                <ul class="mb-0 ps-3">
+                                                                    {% for item in gam_only_value %}
+                                                                    <li>{{ item }}</li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                                {% else %}
+                                                                {{ gam_only_value }}
+                                                                {% endif %}
+                                                            </strong>
+                                                        </div>
+                                                    </div>
+
+                                                {% else %}
+                                                    <em class="text-muted">N/A</em>
+                                                {% endif %}
+                                            </td>
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if error %}
+                        <div class="alert alert-danger mt-4" role="alert">
+                            {{ error }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
