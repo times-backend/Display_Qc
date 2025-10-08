@@ -44,28 +44,25 @@ def switch_to_new_tab(driver):
     driver.switch_to.window(driver.window_handles[-1])
 
 def find_and_download_file(driver, download_dir):
-    time.sleep(2)
     WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.CLASS_NAME, "row.tab-details"))
+        EC.presence_of_all_elements_located((By.CSS_SELECTOR, "button.btn.t-btn-info"))
     )
-    rows = driver.find_elements(By.CSS_SELECTOR, "div.row.tab-details tr")
-    before_download = set(os.listdir(download_dir))    
-    for row in rows:
-        tds = row.find_elements(By.TAG_NAME, "td")
-        for td in tds:
-            if "DSD" in td.text.upper():
-                try:
-                    download_link = WebDriverWait(row, 5).until(
-                        EC.element_to_be_clickable((By.CSS_SELECTOR, "a.text-success[title='Download']"))
-                    )
-                    download_link.click()
-                    print("Download button clicked for:", td.text)
-                    return before_download  # Return set of files before download
-                except Exception as e:
-                    print("Download button not found in row:", e)
-        else:
-            continue
-        break
+
+    before_download = set(os.listdir(download_dir))  # ✅ THIS should be a set
+
+    buttons = driver.find_elements(By.CSS_SELECTOR, "button.btn.t-btn-info")
+    for button in buttons:
+        try:
+            if "DOWNLOAD DSD" in button.text.strip().upper():
+                driver.execute_script("arguments[0].click();", button)
+                print("Clicked 'Download DSD' button.")
+                time.sleep(2)  # Give some time for the download to start
+                return before_download  # ✅ Return the original set here
+        except Exception as e:
+            print("Failed to click download button:", e)
+
+    print("No matching 'Download DSD' button found.")
+    return before_download
 
 def wait_for_download(download_dir, before_download, timeout=30):
     start_time = time.time()
@@ -136,3 +133,4 @@ def Dsd_Download(expresso_id):
     finally:
         driver.quit()
 
+Dsd_Download(276511)
