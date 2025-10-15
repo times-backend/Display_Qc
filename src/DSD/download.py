@@ -75,7 +75,7 @@ def wait_for_download(download_dir, before_download, timeout=30):
                 downloaded_file = os.path.join(download_dir, file)
                 return downloaded_file
         time.sleep(1)
-    return None
+    return downloaded_file
 
 def fetch_campaign_details(driver):
     time.sleep(2)
@@ -132,5 +132,3 @@ def Dsd_Download(expresso_id):
         return order_name,advertiser_name,downloaded_file
     finally:
         driver.quit()
-
-Dsd_Download(276511)
